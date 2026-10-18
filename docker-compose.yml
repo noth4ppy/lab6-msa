@@ -1,0 +1,40 @@
+# Own compose project name (LR4): fresh volume lab4-flyway_mysql_data, the LR3 volume
+# with Hibernate-created tables (no flyway_schema_history) is not reused.
+name: lab4-flyway
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: books
+      MYSQL_USER: books_user
+      MYSQL_PASSWORD: books_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  app:
+    build: .
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: on-failure
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/books
+      SPRING_DATASOURCE_USERNAME: books_user
+      SPRING_DATASOURCE_PASSWORD: books_password
+      SPRING_H2_CONSOLE_ENABLED: "false"
+
+volumes:
+  mysql_data:
